@@ -620,8 +620,8 @@ namespace WPEFramework
             gid_t gid;
             {
                 Core::SafeSyncType<Core::CriticalSection> lock(mRuntimeManagerImplLock);
-		uid = runtimeConfigObject.userId;
-		gid = runtimeConfigObject.groupId;
+                uid = userId;
+                gid = groupId;
             }
 
 #ifdef RALF_PACKAGE_SUPPORT_ENABLED

@@ -81,7 +81,6 @@ AppManagerImplementation* AppManagerImplementation::getInstance()
 AppManagerImplementation::~AppManagerImplementation()
 {
     LOGINFO("Delete AppManagerImplementation Instance");
-    _instance = nullptr;
     sRunning = false;
     mAppRequestListCV.notify_all();
 #ifdef APP_MANAGER_RESOURCE_MONITOR
@@ -126,6 +125,7 @@ AppManagerImplementation::~AppManagerImplementation()
     // process-wide singleton that outlives this instance).
     AppInfoManager::getInstance().clear();
     SYSLOG(Logging::Shutdown, (_T("AppManagerImplementation: AppInfoManager cleared")));
+    _instance = nullptr;
 }
 
 /**

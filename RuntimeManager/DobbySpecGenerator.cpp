@@ -122,21 +122,39 @@ namespace
         }
     }
 
-    // Validate that a path does not contain a parent-directory component.
-    // Host mount sources are supplied as absolute paths from several valid roots,
-    // so restricting them to a small prefix allow-list breaks legitimate specs.
     bool isValidContainerPath(const std::string& path)
     {
-        if (path.empty() || (path.find('\0') != std::string::npos))
+        if (path.empty() || path[0] != '/' || (path.find('\0') != std::string::npos))
+        {
+            return false;
+        }
+
+        static const std::vector<std::string> trustedRoots = {
+            "/opt/app/", "/opt/apps/", "/opt/runtime/", "/opt/runtimes/"
+        };
+        if (std::none_of(trustedRoots.begin(), trustedRoots.end(), [&path](const std::string& root) {
+                return path.compare(0, root.size(), root) == 0;
+            }))
         {
             return false;
         }
 
         std::istringstream components(path);
         std::string component;
+        std::string current;
         while (std::getline(components, component, '/'))
         {
-            if (component == "..")
+            if (component.empty())
+            {
+                continue;
+            }
+            if (component == "." || component == "..")
+            {
+                return false;
+            }
+            current += "/" + component;
+            struct stat pathStat;
+            if ((lstat(current.c_str(), &pathStat) == 0) && S_ISLNK(pathStat.st_mode))
             {
                 return false;
             }

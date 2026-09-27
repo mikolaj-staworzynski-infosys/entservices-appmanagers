@@ -611,7 +611,7 @@ TEST_F(DownloadManagerImplementationTest, DeleteExistingFile) {
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     // Create a temporary file within the download directory that will be deleted by the plugin
-    const string tempFilePath = "/opt/downloads/test_dm_delete_target.bin";
+    const string tempFilePath = "/tmp/downloads/test_dm_delete_target.bin";
     FILE* fp = fopen(tempFilePath.c_str(), "wb");
     ASSERT_NE(fp, nullptr) << "Should be able to create temp file for delete test";
     fclose(fp);

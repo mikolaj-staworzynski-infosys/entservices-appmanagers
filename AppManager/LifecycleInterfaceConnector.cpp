@@ -466,6 +466,13 @@ namespace WPEFramework
                                 }
                                 else
                                 {
+                                    {
+                                        std::lock_guard<std::mutex> stateLock(mStateMutex);
+                                        if (mAppIdAwaitingPause == appId)
+                                        {
+                                            mAppIdAwaitingPause.clear();
+                                        }
+                                    }
                                     LOGERR("Timed out waiting for appId: %s to reach PAUSED state", appId.c_str());
                                     appManagerTelemetryReporting.reportTelemetryErrorData(appId, AppManagerImplementation::APP_ACTION_CLOSE, AppManagerImplementation::ERROR_INTERNAL);
                                     status = Core::ERROR_GENERAL;
@@ -492,13 +499,13 @@ namespace WPEFramework
                             appManagerTelemetryReporting.reportTelemetryErrorData(appId, AppManagerImplementation::APP_ACTION_CLOSE, AppManagerImplementation::ERROR_INTERNAL);
                         }
                     }
-                }
 
                 if (!isAppLoaded)
                 {
                     LOGERR("AppId %s not found in database", appId.c_str());
                     appManagerTelemetryReporting.reportTelemetryErrorData(appId, AppManagerImplementation::APP_ACTION_CLOSE, AppManagerImplementation::ERROR_INVALID_PARAMS);
                 }
+            }
             else
             {
                 LOGERR("AppManagerImplementation instance is null");
@@ -947,15 +954,27 @@ End:
                         }
                         if (Exchange::IAppManager::AppLifecycleState::APP_STATE_PAUSED == newAppState)
                         {
-                            if (mAppIdAwaitingPause == appId)
-                                notifyPauseCV = true;
+                            notifyPauseCV = true;
                         }
                     }
                 });
                 if (notifyPauseCV)
                 {
-                    std::lock_guard<std::mutex> lk(mStateMutex);
-                    mStateChangedCV.notify_all();
+                    bool wakeWaiter = false;
+                    {
+                        /* The waiter in closeApp() blocks until mAppIdAwaitingPause no longer
+                           matches its appId, so it must be cleared here before notifying. */
+                        std::lock_guard<std::mutex> lk(mStateMutex);
+                        if (mAppIdAwaitingPause == appId)
+                        {
+                            mAppIdAwaitingPause.clear();
+                            wakeWaiter = true;
+                        }
+                    }
+                    if (wakeWaiter)
+                    {
+                        mStateChangedCV.notify_all();
+                    }
                 }
                 shouldNotify = ((Exchange::IAppManager::AppLifecycleState::APP_STATE_LOADING == newAppState) ||
                                        (Exchange::IAppManager::AppLifecycleState::APP_STATE_ACTIVE == newAppState) ||
@@ -1091,3 +1110,4 @@ End:
 
      } /* namespace Plugin */
 } /* namespace WPEFramework */
+

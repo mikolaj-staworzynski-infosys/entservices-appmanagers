@@ -383,7 +383,10 @@ namespace WPEFramework
             }
             string errorReason("");
             context->setTargetLifecycleState(targetLifecycleState);
-            context->setMostRecentIntent(launchIntent);
+			if (!launchIntent.empty())
+			{
+                context->setMostRecentIntent(launchIntent);
+			}
             context->resetPendingStates();
             bool success = RequestHandler::getInstance()->updateState(context.get(), targetLifecycleState, errorReason);
             mAdminLock.Unlock();

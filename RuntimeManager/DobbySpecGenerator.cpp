@@ -589,7 +589,7 @@ Json::Value DobbySpecGenerator::createMounts(const ApplicationConfiguration& con
     //TODO SUPPORT Netflix specific mounts
     //TODO SUPPORT SVP file mounts
     //TODO SUPPORT Platform specific mounts
-    if (hasCapability(capabilities, "airplay"))
+    if (hasCapability(capabilities, "airplay2"))
     {
         Json::Value airplayMounts = createAirPlay2Mounts();
         for (Json::Value& mount : airplayMounts)
@@ -904,7 +904,7 @@ Json::Value DobbySpecGenerator::createRdkPlugins(const ApplicationConfiguration&
     rdkPluginsObj["ionmemory"] = createIonMemoryPlugin();
     rdkPluginsObj["minidump"] = createMinidumpPlugin();
 
-    if (hasCapability(capabilities, "airplay"))
+    if (hasCapability(capabilities, "airplay2"))
     {
         rdkPluginsObj["networking"] = createNetworkPlugin(config, runtimeConfig, capabilities);
         rdkPluginsObj["appservicesrdk"] = createAppServiceSDKPlugin(config, runtimeConfig, capabilities);
@@ -1002,7 +1002,7 @@ Json::Value DobbySpecGenerator::createAppServiceSDKPlugin(const ApplicationConfi
             ports.append(port);
         }
     }
-    if (hasCapability(capabilities, "airplay"))
+    if (hasCapability(capabilities, "airplay2"))
     {
         for (int port : mAIConfiguration->getAirplayPorts())
             ports.append(port);

@@ -1832,6 +1832,34 @@ uint32_t Test_DobbySpecGenerator_GenerateWithNonEmptyAppPorts()
     return tr.failures;
 }
 
+/* Test_DobbySpecGenerator_GenerateAirPlay2CapabilityEnablesPortsAndPlugin
+ *
+ * Verifies that the canonical "airplay2" capability enables the appservicesrdk
+ * and networking rdkPlugins and adds the configured AirPlay ports. Guards
+ * against regressing to the wrong capability name ("airplay").
+ */
+uint32_t Test_DobbySpecGenerator_GenerateAirPlay2CapabilityEnablesPortsAndPlugin()
+{
+    L0Test::TestResult tr;
+
+    WPEFramework::Plugin::DobbySpecGenerator gen(GetAIConfigurationFixture());
+    auto appCfg = MakeValidAppConfig();
+    auto rtCfg  = MakeValidRuntimeConfig();
+    rtCfg.capabilities = "airplay2";
+    std::string spec;
+
+    const bool result = gen.generate(appCfg, rtCfg, spec);
+    L0Test::ExpectTrue(tr, result, "generate() succeeds when airplay2 capability is provided");
+    L0Test::ExpectTrue(tr, spec.find("\"appservicesrdk\"") != std::string::npos,
+                       "Generated spec contains appservicesrdk plugin for airplay2 capability");
+    L0Test::ExpectTrue(tr, spec.find("\"networking\"") != std::string::npos,
+                       "Generated spec contains networking plugin for airplay2 capability");
+    L0Test::ExpectTrue(tr, spec.find("43092") != std::string::npos,
+                       "Generated spec includes configured AirPlay port for airplay2 capability");
+
+    return tr.failures;
+}
+
 /* Test_DobbySpecGenerator_GetVpuEnabledReturnsFalseForSystemApp
  *
  * Verifies getVpuEnabled() returns false for SYSTEM app type.

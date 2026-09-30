@@ -103,8 +103,12 @@ done
 echo "Coverity exclude paths: ${EXCLUDED_PATHS}"
 
 if command -v cov-build >/dev/null 2>&1; then
+    echo "DEBUG: using COV-BUILD path"
+    echo "DEBUG: command = cov-build --dir ${GITHUB_WORKSPACE}/cov-int "$@" -- cmake --build build/entservices-appmanagers --target install"
     cov-build --dir "${GITHUB_WORKSPACE}/cov-int" "$@" -- cmake --build build/entservices-appmanagers --target install
 else
+    echo "DEBUG: using NORMAL BUILD path"
+    echo "DEBUG: command = cmake --build build/entservices-appmanagers --target install"
     cmake --build build/entservices-appmanagers --target install
 fi
 echo "======================================================================================"

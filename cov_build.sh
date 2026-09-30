@@ -83,19 +83,19 @@ if [ -d "${BUILD_DIR}" ]; then
 	done
 fi
 
-COVERITY_EXCLUDE_ARGS=()
+set --
 for coverity_path in \
     "${GITHUB_WORKSPACE}/Tests" \
     "${GITHUB_WORKSPACE}/tests" \
     "${GITHUB_WORKSPACE}/openspec" \
     "${GITHUB_WORKSPACE}/develop"; do
     if [ -d "${coverity_path}" ]; then
-        COVERITY_EXCLUDE_ARGS+=("--exclude-path" "${coverity_path}")
+        set -- "$@" --exclude-path "$coverity_path"
     fi
 done
 
 if command -v cov-build >/dev/null 2>&1; then
-    cov-build --dir "${GITHUB_WORKSPACE}/cov-int" "${COVERITY_EXCLUDE_ARGS[@]}" -- cmake --build build/entservices-appmanagers --target install
+    cov-build --dir "${GITHUB_WORKSPACE}/cov-int" "$@" -- cmake --build build/entservices-appmanagers --target install
 else
     cmake --build build/entservices-appmanagers --target install
 fi

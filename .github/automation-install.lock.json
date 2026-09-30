@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "installer_version": "1.0.0",
-  "installed_at": "2026-09-30T14:04:34Z",
+  "installed_at": "2026-09-30T14:06:13Z",
   "modules": [
     {
       "module": "sync-branches",
-      "version": "1.0.101-entsvc-fulltest",
-      "source": "sync-branches-1.0.101-entsvc-fulltest.tar.gz",
+      "version": "1.0.102-actfix",
+      "source": "sync-branches-1.0.102-actfix.tar.gz",
       "managed_files": [
         ".github/actions/sync-branches/action.yml",
         ".github/actions/sync-branches/consumer-template.yml",

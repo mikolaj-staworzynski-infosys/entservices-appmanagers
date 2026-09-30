@@ -37,6 +37,8 @@ jobs:
     name: Merge ${{ github.event.inputs.source_branch || 'develop' }} -> ${{ github.event.inputs.target_branch || 'main' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - uses: ./.github/actions/sync-branches
         with:
           source_branch: ${{ github.event.inputs.source_branch || 'develop' }}

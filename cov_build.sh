@@ -84,6 +84,7 @@ if [ -d "${BUILD_DIR}" ]; then
 fi
 
 set --
+EXCLUDED_PATHS=()
 for coverity_path in \
     "${GITHUB_WORKSPACE}/Tests" \
     "${GITHUB_WORKSPACE}/tests" \
@@ -91,8 +92,11 @@ for coverity_path in \
     "${GITHUB_WORKSPACE}/develop"; do
     if [ -d "${coverity_path}" ]; then
         set -- "$@" --exclude-path "$coverity_path"
+        EXCLUDED_PATHS+=("${coverity_path}")
     fi
 done
+
+echo "Coverity exclude paths: ${EXCLUDED_PATHS[*]}"
 
 if command -v cov-build >/dev/null 2>&1; then
     cov-build --dir "${GITHUB_WORKSPACE}/cov-int" "$@" -- cmake --build build/entservices-appmanagers --target install

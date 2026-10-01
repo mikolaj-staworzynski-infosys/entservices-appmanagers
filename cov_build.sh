@@ -17,7 +17,6 @@ find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 \
     ! -name '.git' \
     ! -name '.cov_build_source' \
     ! -name 'build' \
-    ! -name 'install' \
     ! -name 'tests' \
     ! -name 'libocispec' \
     ! -name 'develop' \
@@ -25,7 +24,7 @@ find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 \
     -exec cp -a {} "${COV_BUILD_SOURCE}/" \;
 
 echo "DEBUG: using filtered source tree for scan prep: ${COV_BUILD_SOURCE}"
-echo "DEBUG: excluded directories: .git .cov_build_source build install tests libocispec develop openspec"
+echo "DEBUG: excluded directories: .git .cov_build_source build tests libocispec develop openspec; keeping install and Tests required by build"
 
 # Native/L1 build environment: ensure AppManager sees jsoncpp headers via its env-based include hook.
 export APP_MANAGER_INCLUDES="/usr/include/jsoncpp"

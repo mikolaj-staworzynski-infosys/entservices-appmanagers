@@ -9,15 +9,17 @@ GITHUB_WORKSPACE="${PWD}"
 ls -la ${GITHUB_WORKSPACE}
 
 # Exclude non-product directories from the build source tree so coverity/scans
-# are run against a clean product build without those folders. Keep the build
-# rooted outside the repo checkout to avoid CMake generating include paths that
-# point back into the original source directory (for example ../entservices-appmanagers).
-COV_BUILD_SOURCE="${RUNNER_TEMP:-/tmp}/entservices-appmanagers-cov"
+# are run against a clean product build without those folders.
+# Important: the L1 test CMake files hardcode ../entservices-appmanagers, so the
+# filtered source tree must live as a sibling of the repo root, not inside it and
+# not in /tmp, otherwise those generated include paths resolve incorrectly.
+REPO_PARENT="$(dirname "${GITHUB_WORKSPACE}")"
+COV_BUILD_SOURCE="${REPO_PARENT}/entservices-appmanagers-cov"
 rm -rf "${COV_BUILD_SOURCE}"
 mkdir -p "${COV_BUILD_SOURCE}"
 
 echo "DEBUG: repo root: ${GITHUB_WORKSPACE}"
-echo "DEBUG: using external filtered source tree for scan prep: ${COV_BUILD_SOURCE}"
+echo "DEBUG: sibling scan-prep tree: ${COV_BUILD_SOURCE}"
 find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 \
     ! -name '.git' \
     ! -name '.cov_build_source' \

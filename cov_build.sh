@@ -9,10 +9,15 @@ GITHUB_WORKSPACE="${PWD}"
 ls -la ${GITHUB_WORKSPACE}
 
 # Exclude non-product directories from the build source tree so coverity/scans
-# are run against a clean product build without those folders.
-COV_BUILD_SOURCE="${GITHUB_WORKSPACE}/.cov_build_source"
+# are run against a clean product build without those folders. Keep the build
+# rooted outside the repo checkout to avoid CMake generating include paths that
+# point back into the original source directory (for example ../entservices-appmanagers).
+COV_BUILD_SOURCE="${RUNNER_TEMP:-/tmp}/entservices-appmanagers-cov"
 rm -rf "${COV_BUILD_SOURCE}"
 mkdir -p "${COV_BUILD_SOURCE}"
+
+echo "DEBUG: repo root: ${GITHUB_WORKSPACE}"
+echo "DEBUG: using external filtered source tree for scan prep: ${COV_BUILD_SOURCE}"
 find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 \
     ! -name '.git' \
     ! -name '.cov_build_source' \
@@ -23,7 +28,6 @@ find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 \
     ! -name 'openspec' \
     -exec cp -a {} "${COV_BUILD_SOURCE}/" \;
 
-echo "DEBUG: using filtered source tree for scan prep: ${COV_BUILD_SOURCE}"
 echo "DEBUG: excluded directories: .git .cov_build_source build tests libocispec develop openspec; keeping install and Tests required by build"
 
 # Native/L1 build environment: ensure AppManager sees jsoncpp headers via its env-based include hook.

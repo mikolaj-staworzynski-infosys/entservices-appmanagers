@@ -332,6 +332,9 @@ Core::hresult RDKWindowManagerImplementation::Initialize(PluginHost::IShell* ser
                         gScreenshotData = nullptr;
                         gScreenshotSize = 0;
                     }
+                    else {
+                        LOGERR("LUKIWA: Screenshot failed");
+                    }
 
                     if (RDKWindowManagerImplementation::_instance)
                     {

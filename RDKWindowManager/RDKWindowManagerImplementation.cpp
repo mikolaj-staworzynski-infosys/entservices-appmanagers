@@ -327,6 +327,7 @@ Core::hresult RDKWindowManagerImplementation::Initialize(PluginHost::IShell* ser
 
                     if (success && gScreenshotData && gScreenshotSize > 0)
                     {
+                        LOGINFO("LUKIWA: Screenshot succeeded");
                         ::Utils::String::imageEncoder(gScreenshotData, gScreenshotSize, true, gScreenshotImageData);
                         free(gScreenshotData);
                         gScreenshotData = nullptr;

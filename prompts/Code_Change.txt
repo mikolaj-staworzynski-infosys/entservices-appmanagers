@@ -1,0 +1,246 @@
+You will get a HANDOFF block from a triage step, and maybe logs. The handoff lists one 
+or more repos to work in, what to change in each, and the order to work in. Follow the 
+steps below without stopping to ask me questions, except where a step says STOP. 
+If you have to guess, write it down in your final output.
+
+PROGRESS UPDATES
+Give brief status updates separate from the final output. For each repo, identify the repo and step. Before starting a step, report STARTED; when it finishes, report DONE, or report BLOCKED/SKIPPED with a short reason.
+
+Example:
+PROGRESS: entservices-appmanagers — Step 3/9 STARTED: reading logs
+PROGRESS: entservices-appmanagers — Step 3/9 DONE
+PROGRESS: libpackage-sky — Step 2/9 SKIPPED: handoff evidence does not point to this repo
+
+For Step 0, report preflight across all repos before creating any branch. Do not start branch creation until every listed repo passes the worktree, develop-branch, and existing-topic-branch checks.
+
+When a stop condition is reached, report BLOCKED and the reason. For Step 4B, report the feature plan and that you are waiting for approval; do not continue to Steps 5–9 until approval. Progress updates are status summaries, not private chain-of-thought.
+
+Keep progress updates outside FINAL OUTPUT. Use the final output format only when the work is complete, or when a stop condition requires a report.
+
+If REPOS TO CHANGE is 0 or CHANGE TYPE is NOT A CODE CHANGE, do not create branches; skip implementation steps and report the conclusion.
+
+If Step 2 concludes NO CHANGE NEEDED for a repo, record the reason and skip Steps 3–8 for that repo. Continue to the next repo.
+
+STEP 0 — Preflight and create branches in every listed repo
+0A — Preflight all repos before changing branches:
+- Check every repo's worktree is clean.
+- Confirm each has an updatable develop branch.
+- Check that topic/<TICKET ID> does not exist locally or on its remotes.
+- If any check fails, STOP before creating a branch in any repo.
+
+0B — Update develop in every repo:
+- Switch to develop and update it from its upstream.
+- If any update fails, STOP before creating topic branches.
+
+0C — Create topic branches:
+- Create topic/<TICKET ID> from develop in each repo.
+- Use the same branch name everywhere.
+- Never delete or overwrite an existing branch, if the branch exists ask the user whether to proceed with it.
+
+Then do STEPS 1 to 9 for each repo, in the ORDER OF WORK given in the handoff.
+
+STEP 1 — Understand the relevant parts of the repo
+- Read the repo's README.md first, then the docs relevant to the handoff
+  (such as a docs/ guide or the relevant <PluginName>.md file).
+- If a README or referenced doc does not exist, say so and continue using the
+  available source and documentation. Do not invent what a missing doc says.
+- Identify only the plugin/components relevant to the handoff and their role.
+  Include directly related dependencies when they help explain ownership; do not
+  inventory unrelated plugins.
+- Repo-specific notes:
+    - entos-appmanagers: read README.md, then docs/architecture-and-build.md,
+      then the doc for the plugin/service involved (e.g. docs/thunder-softcat.md,
+      docs/dbus-full-service.md). Determine whether the ticket concerns DBus
+      (default) or Thunder (RDKAPPMANAGERS_THUNDER=ON). They are separate code,
+      not layers. Change only the build the ticket concerns, unless the ticket
+      needs both. If the handoff says BUILD: unknown and you cannot determine it
+      from the ticket/logs, STOP and ask me.
+      IAppManager / IPackageInstaller and some Thunder contracts come from the
+      SDK, not this repo. If the problem is inside those, say so instead of
+      changing this repo.
+    - libpackage-sky: read README.md, then the matching guide in docs/
+      (package-management.md, package-database.md, package-extraction.md,
+      archive-filesystem.md, xml-security.md, crypto.md, http-clients.md,
+      platform-runtime.md, common-models.md). This is a shared library: many
+      callers may use the function you change, so check all callers before
+      changing behaviour.
+
+STEP 2 — Check the handoff was right for this repo
+- Using CHANGE IN THIS REPO, CLUES and KEY LOG LINES, decide which plugin/component owns this part.
+- If after reading the docs this repo does NOT need a change, do not change anything 
+  here. Note "NO CHANGE NEEDED in <repo>" with the reason and move on.
+- If you find that a repo NOT in the handoff also needs a change, do not go into it on 
+  your own. STOP and tell me which repo and why.
+
+STEP 3 — Read the logs (skip only if no logs were given)
+- Read the logs in time order. Look at ERROR and WARN lines, the app ID from the ticket, 
+  and the plugin names.
+- Find the FIRST thing that went wrong, not the last. Later errors are often just 
+  side effects of the first one.
+- Write a short timeline: what happened just before the failure, the failure itself, 
+  and what happened after.
+- For each important log line, search the source code for that exact message to find 
+  the line of code that printed it. This tells you exactly which code path ran.
+- Logs are clues, not proof. Confirm everything you conclude from the logs by reading the code.
+- If the logs do not have enough detail, do not guess. Tell me what extra logs to 
+  collect and how, then continue as far as you can. For libpackage-sky, the default 
+  log level is milestone only; more detail needs (then restart the service):
+      touch /opt/libpackageEnableDebug   (most detail)
+      touch /opt/libpackageEnableInfo    (medium detail)
+  and its context logger is configured in /opt/persistent/sky/diag.cfg.
+  Never change device settings yourself; only tell me what to run.
+
+STEP 4 — Find the real root cause (take your time here; this is the most important step)
+- Trace the problem back to where it STARTS, not just where it crashes or fails.
+  Keep asking "why?" until you reach the real reason. Example:
+      App crashes → because pointer X is null → WHY is X null? → because it was never 
+      set after wake-up → WHY? → because the wake-up path skips initialisation.
+      The root cause is the skipped initialisation, not the crash line.
+- A one-line guard (null check, early return, try/catch, extra "if") that only stops 
+  the crash is NOT a fix by itself. It hides the problem. Only use a guard if you can 
+  explain why the value being empty/invalid is a normal, expected situation. If it is 
+  NOT expected, fix the reason it went wrong.
+- Check the SAME pattern in other places: other functions or paths in this plugin 
+  that do the same thing (e.g. suspend AND hibernate, start AND restart) may have the 
+  same bug. List them and fix them too if they are part of this problem.
+- Check threads and timing: could two things be happening at the same time, or in a 
+  different order than the code expects? Look at locks and callbacks near the problem.
+- Before changing anything, write down:
+    a) the root cause in 2-3 lines
+    b) the evidence: the code lines, and the log lines if you have logs, that prove it
+    c) why a simple guard would not be enough (or why a guard is the right fix here)
+    d) the CHANGE TYPE, confirmed from the code (it may differ from the handoff):
+         BUG FIX           — existing code does the wrong thing. Go on to Step 5.
+         NEW FEATURE       — the code was never built to do what the ticket asks. 
+                             Go to STEP 4B.
+         NOT A CODE CHANGE — expected behaviour, config, or another team's component. 
+                             Do not change code. Explain why and skip to FINAL OUTPUT.
+
+STEP 4B — Only for NEW FEATURE: plan first, then STOP
+Adding a feature is allowed, but requires design choices and approval before
+any source code is changed. Prepare a plan based on the ticket and repo evidence:
+- The behavior the feature should provide, in plain words.
+- Which repo(s) and plugin(s) should own it, and why.
+- Similar existing behavior or patterns to reuse.
+- The implementation pieces needed, such as functions, stored data, config,
+  events, or cross-repo dependencies.
+- Whether an API must change or be added. Any API change needs separate approval
+  under Step 6.
+- What is outside the codebase's responsibility.
+- Risks to existing behavior.
+- Tests to add.
+- QUESTIONS FOR TICKET OWNER: facts needed before implementation.
+
+Then STOP and wait for approval. Do not continue to Steps 5–9 or write source code
+until the plan is approved.
+
+For this stop, report:
+- STATUS: WAITING FOR APPROVAL
+- The proposed behavior and plan
+- Repos and components involved
+- API impact, risks, tests, and unanswered questions
+- Branches created, if any
+- NO SOURCE CODE CHANGED
+
+Do not use the normal completion output for this approval pause. After approval,
+continue with Steps 5–9, following the approved plan.
+
+STEP 5 — Learn the code style before writing any code
+- Read the file you will change, plus 2-3 nearby files in the same plugin.
+- If the repo has style or contribution files (.clang-format, .editorconfig, CONTRIBUTING.md), 
+  follow them.
+- Write your change so it looks like the same person wrote it. Match:
+    - naming (variables, functions, member variables, constants)
+    - indentation, braces, spacing, line length
+    - the logging macros and log message style the file already uses 
+      (e.g. libpackage-sky uses AI_LOG_* macros; do not add printf/cout)
+    - how errors are returned and checked (use the same error codes/pattern as nearby code)
+    - how locks, pointers and memory are handled in nearby code
+    - comment style, and the license header on any new file (copy it from an existing file)
+- Do not reformat, rename or "clean up" lines you did not need to change.
+- Do not add new libraries or new patterns if the codebase already has a way to do it.
+
+STEP 6 — Fix it
+- BUG FIX: fix the ROOT CAUSE from Step 4, not the symptom. Keep the change as small as 
+  possible WHILE still fixing the root cause. Small is good, but a fix that is too small 
+  to actually fix the problem is wrong.
+- NEW FEATURE (approved plan only): build what the plan says. Write as much new code as 
+  the feature truly needs, no more. Do not add extras that were not in the plan.
+- Do not change unrelated code and do not break anything that works today.
+- FIX THE IMPLEMENTATION, NOT THE API. Do not change any API (method names, parameters, 
+  return types, events, interface header files, JSON-RPC definitions) if the bug can be 
+  fixed inside the implementation. Other plugins and apps depend on these APIs.
+- Only change an API if there is no other way. If so, STOP before changing it and explain:
+    a) why the implementation alone cannot fix it
+    b) exactly what API change you want
+    c) who else uses that API and could break
+  Wait for my approval. (Any change in entservices-apis counts as an API change.)
+- If the fix spans repos, make sure the pieces match each other (for example, what 
+  appmanagers calls must match what dobby provides) and that each repo still builds on its own.
+- Editing safely:
+    - Before every edit, re-open the file and copy the exact lines around the change 
+      from the file itself. Do not write the surrounding lines from memory.
+    - After every edit, run `git diff` on that file and check that only the lines you 
+      meant to change were changed.
+    - If an edit to the same file fails twice, STOP. Show me the exact lines you were 
+      trying to change and what you wanted to change them to. Do not keep retrying, and 
+      do not rewrite the whole file or a big block to get around it.
+
+STEP 7 — Tests (must do, do not skip)
+- Find the test files for the code you changed (the repo's Tests/ or tests/ folder).
+  For entos-appmanagers, read docs/testing-and-quality.md first: it lists the existing 
+  test scripts/binaries and known gaps. If the code you changed has no test setup at 
+  all, say so and suggest the smallest test that would fit the existing setup.
+- Write tests the same way the existing tests are written: same test framework, 
+  same file and test naming, same mocks/helpers.
+- Before adding a test, look at how an existing test in the same file/folder is 
+  registered (for example in a CMakeLists.txt or a test list), and add yours 
+  the same way, right next to it.
+- The test must check the ROOT CAUSE scenario from Step 4 (e.g. "wake up after 
+  hibernate, then call X"), not just "does not crash". It should FAIL on the old code 
+  and PASS on the new code.
+- If the test files were not updated, update them or add a test that would have caught this bug.
+- If you can build and run the tests you changed, do it and report the result honestly. 
+  If you could not run them, say "NOT RUN" and why. Never say tests passed if you did not run them.
+- Only skip adding a test if it is truly impossible, and explain why.
+
+STEP 8 — Review your own work before finishing
+Look at the full `git diff` as if you were a strict senior reviewer, and answer:
+- Does this fix the root cause, or only hide the symptom?
+- Does the root cause match the logs (if logs were given)?
+- Did I fix the same bug in the other places from Step 4?
+- Did I change any API? Did I change anything unrelated?
+- Does the new code look like the code around it?
+- Would my test fail on the old code?
+If any answer is bad, go back and fix it before giving the final output.
+
+STEP 9 — Safety
+- Do NOT push anything to any repository, especially develop or release. You may commit 
+  on the topic branch, but do not push. If a push seems necessary, stop and ask me, and 
+  I must confirm twice.
+
+FINAL OUTPUT (one section per repo, then a summary):
+For each repo:
+- Branch created
+- Change type (BUG FIX / NEW FEATURE / NOT A CODE CHANGE), and whether it differs from the handoff
+- Changed or "NO CHANGE NEEDED" (with reason)
+- Plugin/component (for entos-appmanagers also say which build: DBus or Thunder)
+- Log timeline (short), or "no logs given"
+- Root cause + evidence (code lines, log lines)
+- Why this is more than a guard (or why a guard is correct here)
+- Other places with the same pattern, and whether they were fixed
+- Files changed
+- Style: which existing file(s) you copied the style from
+- "No API changed", or the approved API change and why
+- Test files changed or added, and test result (PASSED / FAILED / NOT RUN)
+Summary:
+- How the changes in different repos depend on each other, and whether they must be 
+  merged together or in a set order
+- Any docs now out of date
+- Any guesses you made
+
+HANDOFF:
+[paste Prompt 1's output here]
+
+Logs (optional):
+[paste logs here, or attach the log files, or write "none"]

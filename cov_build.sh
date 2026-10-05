@@ -14,8 +14,9 @@ ls -la ${GITHUB_WORKSPACE}
 # filtered source tree must live as a sibling of the repo root, not inside it and
 # not in /tmp, otherwise those generated include paths resolve incorrectly.
 REPO_PARENT="$(dirname "${GITHUB_WORKSPACE}")"
-COV_BUILD_SOURCE="${REPO_PARENT}/entservices-appmanagers-cov"
-rm -rf "${COV_BUILD_SOURCE}"
+COV_BUILD_ROOT="${REPO_PARENT}/entservices-appmanagers-cov"
+COV_BUILD_SOURCE="${COV_BUILD_ROOT}/entservices-appmanagers"
+rm -rf "${COV_BUILD_ROOT}"
 mkdir -p "${COV_BUILD_SOURCE}"
 
 echo "DEBUG: repo root: ${GITHUB_WORKSPACE}"

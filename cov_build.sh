@@ -43,7 +43,7 @@ cd "${COV_BUILD_SOURCE}"
 PREFIX_PATH="${CMAKE_PREFIX_PATH:+${CMAKE_PREFIX_PATH};}${COV_BUILD_SOURCE}/install/usr;${COV_BUILD_SOURCE}/eshelpers;/usr"
 
 # Coverity workflow only: make CompileSettingsDebug export symbols for direct test linking.
-COMPILE_SETTINGS_DIR="${GITHUB_WORKSPACE}/install/usr/lib/cmake/CompileSettingsDebug"
+COMPILE_SETTINGS_DIR="${COV_BUILD_SOURCE}/install/usr/lib/cmake/CompileSettingsDebug"
 if [ -d "${COMPILE_SETTINGS_DIR}" ]; then
 	find "${COMPILE_SETTINGS_DIR}" -type f -name "*.cmake" | while read -r cmake_file; do
 		perl -pi -e 's/-fvisibility=hidden/-fvisibility=default/g' "${cmake_file}"

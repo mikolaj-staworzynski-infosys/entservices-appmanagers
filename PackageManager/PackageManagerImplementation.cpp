@@ -1034,17 +1034,7 @@ namespace Plugin {
             auto &stateBlocked = itBlocked->second;
             LOGDBG("blockedVer: '%s' state: %d", blockedVer.c_str(), (unsigned) stateBlocked.installState);
             stateBlocked.unpackedPath = "";
-            if (stateBlocked.installState == InstallState::INSTALLATION_BLOCKED) {
-                auto blockedData = stateBlocked.blockedInstallData;
-                if (Install(packageId, blockedData.version, blockedData.keyValues, blockedData.fileLocator, stateBlocked) == Core::ERROR_NONE) {
-                    LOGDBG("Blocked package installed. id: %s ver: %s", packageId.c_str(), blockedVer.c_str());
-                    if (version.compare(blockedVer)) {  // different version(s)
-                        setState(packageId, version, InstallState::UNINSTALLED);
-                    }
-                } else {
-                    LOGERR("Blocked package installtion failed id: %s ver: %s", packageId.c_str(), blockedVer.c_str());
-                }
-            } else if (stateBlocked.installState == InstallState::UNINSTALL_BLOCKED) {
+            if (stateBlocked.installState == InstallState::UNINSTALL_BLOCKED) {
                 string errorReason;
                 if (Uninstall(packageId, errorReason) == Core::ERROR_NONE) {
                     LOGDBG("Blocked package uninstalled id: %s ver: %s", packageId.c_str(), blockedVer.c_str());

@@ -21,6 +21,7 @@
 #include "LifecycleInterfaceConnector.h"
 #include "AppInfoManager.h"
 #include <algorithm>
+#include <chrono>
 #include <string>
 #include <memory>
 #include <mutex>
@@ -40,6 +41,13 @@
 #include "AppManagerTelemetryReporting.h"
 
 #define PAUSE_STATE_WAITTIME       1000
+
+/* Elapsed milliseconds since the supplied steady_clock reference point.
+ * Used to instrument the close path so the source of the end-to-end
+ * /as/apps/action/close latency can be identified from the logs. */
+#define ELAPSED_MS(start) \
+    (static_cast<long long>(std::chrono::duration_cast<std::chrono::milliseconds>( \
+        std::chrono::steady_clock::now() - (start)).count()))
 
 using namespace std;
 using namespace Utils;
@@ -396,9 +404,11 @@ namespace WPEFramework
             AppManagerImplementation* appManagerImplInstance = AppManagerImplementation::getInstance();
             AppManagerTelemetryReporting& appManagerTelemetryReporting =AppManagerTelemetryReporting::getInstance();
             bool isAppLoaded = false;
+            const auto closeEntryTime = std::chrono::steady_clock::now();
 
             LOGINFO("AppId retrieved: %s", appId.c_str());
             mAdminLock.Lock();
+            LOGINFO("TIMING closeApp: appId=%s acquired mAdminLock after %lldms", appId.c_str(), ELAPSED_MS(closeEntryTime));
 
             if(nullptr != appManagerImplInstance)
             {
@@ -415,7 +425,10 @@ namespace WPEFramework
 
 			    mAppCurrentActionList[appId] = Exchange::IAppManager::AppLifecycleState::APP_STATE_TERMINATING;
 
+                            const auto setTargetStateStart = std::chrono::steady_clock::now();
                             status = mLifecycleManagerRemoteObject->SetTargetAppState(appInstanceId, Exchange::ILifecycleManager::LifecycleState::PAUSED, appIntent);
+                            LOGINFO("TIMING closeApp: appId=%s SetTargetAppState(PAUSED) took %lldms status=%u",
+                                    appId.c_str(), ELAPSED_MS(setTargetStateStart), status);
 
                             if(Core::ERROR_NONE == status)
                             {
@@ -426,12 +439,19 @@ namespace WPEFramework
                                     mAppIdAwaitingPause = appId;
                                 }
                                 mAdminLock.Unlock();
+                                bool pauseConfirmed = false;
+                                const auto pauseWaitStart = std::chrono::steady_clock::now();
                                 {
                                     std::unique_lock<std::mutex> lk(mStateMutex);
-                                    mStateChangedCV.wait_for(lk, std::chrono::milliseconds(PAUSE_STATE_WAITTIME), [this, &appId]() {
+                                    pauseConfirmed = mStateChangedCV.wait_for(lk, std::chrono::milliseconds(PAUSE_STATE_WAITTIME), [this, &appId]() {
                                         return mAppIdAwaitingPause != appId;
                                     });
                                 }
+                                /* This wait is the dominant contributor to close latency: it blocks
+                                 * the caller (and therefore the HTTP response) for up to
+                                 * PAUSE_STATE_WAITTIME ms when PAUSED confirmation does not arrive. */
+                                LOGINFO("TIMING closeApp: appId=%s PAUSED wait took %lldms (timeout=%dms, confirmed=%d)",
+                                        appId.c_str(), ELAPSED_MS(pauseWaitStart), PAUSE_STATE_WAITTIME, pauseConfirmed);
 
                                 mAdminLock.Lock();
                                 AppInfo postWaitSnap;
@@ -505,6 +525,7 @@ namespace WPEFramework
                 appManagerTelemetryReporting.reportTelemetryErrorData(appId, AppManagerImplementation::APP_ACTION_CLOSE, AppManagerImplementation::ERROR_INTERNAL);
             }
             mAdminLock.Unlock();
+            LOGINFO("TIMING closeApp: appId=%s total %lldms status=%u", appId.c_str(), ELAPSED_MS(closeEntryTime), status);
             return status;
         }
 

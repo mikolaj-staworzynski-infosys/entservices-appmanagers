@@ -17,6 +17,7 @@
 * limitations under the License.
 */
 
+#include <chrono>
 #include <iomanip>      /* for std::setw, std::setfill */
 #include <atomic>
 #include <sys/stat.h>
@@ -1272,14 +1273,24 @@ Core::hresult AppManagerImplementation::CloseApp(const string& appId)
     Core::hresult status = Core::ERROR_GENERAL;
     AppManagerTelemetryReporting& appManagerTelemetryReporting =AppManagerTelemetryReporting::getInstance();
     time_t requestTime = appManagerTelemetryReporting.getCurrentTimestampMs();
+    const auto closeAppEntryTime = std::chrono::steady_clock::now();
     LOGINFO("CloseApp Entered with appId %s", appId.c_str());
 
     if (!appId.empty())
     {
         mAdminLock.Lock();
+        LOGINFO("TIMING CloseApp: appId=%s acquired mAdminLock after %lldms", appId.c_str(),
+                static_cast<long long>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - closeAppEntryTime).count()));
         if (nullptr != mLifecycleInterfaceConnector)
         {
+            const auto connectorCallStart = std::chrono::steady_clock::now();
             status = mLifecycleInterfaceConnector->closeApp(appId);
+            LOGINFO("TIMING CloseApp: appId=%s lifecycleInterfaceConnector->closeApp took %lldms status=%u",
+                    appId.c_str(),
+                    static_cast<long long>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - connectorCallStart).count()),
+                    status);
         }
         else
         {
@@ -1296,6 +1307,10 @@ Core::hresult AppManagerImplementation::CloseApp(const string& appId)
     {
         LOGERR("appId is empty");
     }
+    LOGINFO("TIMING CloseApp: appId=%s total %lldms status=%u", appId.c_str(),
+            static_cast<long long>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - closeAppEntryTime).count()),
+            status);
     return status;
 }
 

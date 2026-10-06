@@ -667,7 +667,7 @@ namespace Plugin
             mAirplayMounts.clear();
             for (const auto& mount : airplayMounts)
             {
-                if (mount["source"].isString() && mount["destination"].isString())
+                if (mount.isObject() && mount["source"].isString() && mount["destination"].isString())
                     mAirplayMounts.emplace_back(mount["source"].asString(),
                                                 mount["destination"].asString());
             }

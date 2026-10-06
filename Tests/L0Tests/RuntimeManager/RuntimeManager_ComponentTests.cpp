@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <json/json.h>
 #include <unistd.h>
 #include <string>
 
@@ -1852,7 +1853,11 @@ uint32_t Test_DobbySpecGenerator_GenerateAirPlay2CapabilityEnablesPortsAndPlugin
     L0Test::ExpectTrue(tr, result, "generate() succeeds when airplay2 capability is provided");
     L0Test::ExpectTrue(tr, spec.find("\"appservicesrdk\"") != std::string::npos,
                        "Generated spec contains appservicesrdk plugin for airplay2 capability");
-    L0Test::ExpectTrue(tr, spec.find("\"networking\"") != std::string::npos,
+    Json::Value parsedSpec;
+    Json::Reader reader;
+    const bool parsed = reader.parse(spec, parsedSpec);
+    L0Test::ExpectTrue(tr, parsed, "Generated spec is valid JSON");
+    L0Test::ExpectTrue(tr, parsed && parsedSpec["rdkPlugins"]["networking"].isObject(),
                        "Generated spec contains networking plugin for airplay2 capability");
     L0Test::ExpectTrue(tr, spec.find("43092") != std::string::npos,
                        "Generated spec includes configured AirPlay port for airplay2 capability");

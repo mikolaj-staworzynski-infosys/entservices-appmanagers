@@ -179,10 +179,10 @@ namespace packagemanager
 
         virtual Result GetRunningApplicationsUsingPackage(const std::string &packageId, std::vector<std::string> &applicationIds) {
             applicationIds.clear();
-            if (packageId == "StatusFailApp") {
+            if ("StatusFailApp" == packageId) {
                 return FAILED;
             }
-            if (packageId == "YouTube") {
+            if ("YouTube" == packageId) {
                 applicationIds.push_back("YouTube");
             }
             return SUCCESS;

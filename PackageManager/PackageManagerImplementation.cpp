@@ -1356,6 +1356,24 @@ namespace Plugin {
         return result;
     }
 
+    Core::hresult PackageManagerImplementation::GetRunningApplicationsUsingPackage(const string &packageId, string& applicationIds)
+    {
+        CHECK_CACHE()
+        std::vector<std::string> appIds;
+        if (packageImpl->GetRunningApplicationsUsingPackage(packageId, appIds) != packagemanager::SUCCESS) {
+            return Core::ERROR_GENERAL;
+        }
+        JsonArray list = JsonArray();
+        for (const auto& appId : appIds) {
+            list.Add(appId);
+        }
+        if (!list.ToString(applicationIds)) {
+            LOGERR("Failed to stringify running application ids to JsonArray");
+            return Core::ERROR_GENERAL;
+        }
+        return Core::ERROR_NONE;
+    }
+
     void PackageManagerImplementation::NotifyDownloadStatus(const string& id, const string& locator, const DownloadReason reason)
     {
 

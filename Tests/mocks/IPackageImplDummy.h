@@ -174,8 +174,15 @@ namespace packagemanager
                 config = "{\"packageId\":\"YouTube\",\"version\":\"100.1.24\"}";
                 return SUCCESS;
             }
-            return FAILED; 
-        }        
+            return FAILED;
+        }
+
+        // The dummy mounts nothing, so no running application uses any package.
+        virtual Result GetRunningApplicationsUsingPackage(const std::string &packageId, std::vector<std::string> &applicationIds) {
+            (void)packageId;
+            applicationIds.clear();
+            return SUCCESS;
+        }
 
         static std::shared_ptr<packagemanager::IPackageImplDummy> instance() {
                 return std::make_shared<packagemanager::IPackageImplDummy>();

@@ -1359,6 +1359,8 @@ namespace Plugin {
     Core::hresult PackageManagerImplementation::GetRunningApplicationsUsingPackage(const string &packageId, string& applicationIds)
     {
         CHECK_CACHE()
+
+        std::lock_guard<std::recursive_mutex> lock(mtxState);
         std::vector<std::string> appIds;
         const packagemanager::Result result = packageImpl->GetRunningApplicationsUsingPackage(packageId, appIds);
         if (packagemanager::SUCCESS != result) {

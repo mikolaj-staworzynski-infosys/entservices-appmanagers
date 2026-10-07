@@ -177,10 +177,14 @@ namespace packagemanager
             return FAILED;
         }
 
-        // The dummy mounts nothing, so no running application uses any package.
         virtual Result GetRunningApplicationsUsingPackage(const std::string &packageId, std::vector<std::string> &applicationIds) {
-            (void)packageId;
             applicationIds.clear();
+            if (packageId == "StatusFailApp") {
+                return FAILED;
+            }
+            if (packageId == "YouTube") {
+                applicationIds.push_back("YouTube");
+            }
             return SUCCESS;
         }
 

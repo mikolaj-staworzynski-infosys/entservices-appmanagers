@@ -133,8 +133,9 @@ namespace Plugin
             ASSERT(mService == service);
             mService->Unregister(&mNotificationSink);
 
-            if (mAppPackagesStatus != nullptr) {
+            if (nullptr != mAppPackagesStatus) {
                 Exchange::JAppPackagesStatus::Unregister(*this);
+                mAppPackagesStatus->Release();
                 mAppPackagesStatus = nullptr;
             }
 

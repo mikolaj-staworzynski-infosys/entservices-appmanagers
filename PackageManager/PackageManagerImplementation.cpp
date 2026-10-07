@@ -1360,7 +1360,9 @@ namespace Plugin {
     {
         CHECK_CACHE()
         std::vector<std::string> appIds;
-        if (packageImpl->GetRunningApplicationsUsingPackage(packageId, appIds) != packagemanager::SUCCESS) {
+        const packagemanager::Result result = packageImpl->GetRunningApplicationsUsingPackage(packageId, appIds);
+        if (packagemanager::SUCCESS != result) {
+            LOGERR("Failed to get running applications for packageId '%s': %d", packageId.c_str(), static_cast<int>(result));
             return Core::ERROR_GENERAL;
         }
         JsonArray list = JsonArray();

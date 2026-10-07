@@ -112,7 +112,7 @@ namespace Plugin
                 Exchange::JAppPackageManagerConfig::Register(*this, mPackageConfig);
             }
             mAppPackagesStatus = mPackageDownloader->QueryInterface<Exchange::IAppPackagesStatus>();
-            if (mAppPackagesStatus != nullptr) {
+            if (nullptr != mAppPackagesStatus) {
                 Exchange::JAppPackagesStatus::Register(*this, mAppPackagesStatus);
             } else {
                 LOGERR("Failed to get instance of IAppPackagesStatus");

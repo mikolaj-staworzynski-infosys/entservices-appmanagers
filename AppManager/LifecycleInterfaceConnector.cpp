@@ -432,69 +432,18 @@ namespace WPEFramework
 
                             if(Core::ERROR_NONE == status)
                             {
-                                LOGINFO("Requested PAUSED state for appId: %s. Waiting for PAUSED confirmation...", appId.c_str());
-
+                                // Asynchronous close: initiate PAUSED transition and return immediately.
+                                // The lifecycle manager will deliver the state change notification
+                                // asynchronously, which will be reflected in the status stream to the EPG.
+                                // No blocking wait for PAUSED confirmation — this eliminates the ~1s
+                                // HTTP response latency that was blocking the caller (HTTP client/EPG).
+                                LOGINFO("closeApp: appId=%s SetTargetAppState(PAUSED) initiated, returning immediately (async)",
+                                        appId.c_str());
                                 {
                                     std::lock_guard<std::mutex> stateLock(mStateMutex);
                                     mAppIdAwaitingPause = appId;
                                 }
-                                mAdminLock.Unlock();
-                                bool pauseConfirmed = false;
-                                const auto pauseWaitStart = std::chrono::steady_clock::now();
-                                {
-                                    std::unique_lock<std::mutex> lk(mStateMutex);
-                                    pauseConfirmed = mStateChangedCV.wait_for(lk, std::chrono::milliseconds(PAUSE_STATE_WAITTIME), [this, &appId]() {
-                                        return mAppIdAwaitingPause != appId;
-                                    });
-                                }
-                                /* This wait is the dominant contributor to close latency: it blocks
-                                 * the caller (and therefore the HTTP response) for up to
-                                 * PAUSE_STATE_WAITTIME ms when PAUSED confirmation does not arrive. */
-                                LOGINFO("TIMING closeApp: appId=%s PAUSED wait took %lldms (timeout=%dms, confirmed=%d)",
-                                        appId.c_str(), ELAPSED_MS(pauseWaitStart), PAUSE_STATE_WAITTIME, pauseConfirmed);
-
-                                mAdminLock.Lock();
-                                AppInfo postWaitSnap;
-                                bool postWaitFound = AppInfoManager::getInstance().get(appId, postWaitSnap);
-                                if(postWaitFound &&
-                                    Exchange::IAppManager::AppLifecycleState::APP_STATE_PAUSED == postWaitSnap.getAppNewState())
-                                {
-                                    {
-                                        std::lock_guard<std::mutex> stateLock(mStateMutex);
-                                        mAppIdAwaitingPause.clear();
-                                    }
-
-                                    if (AppInfoManager::getInstance().exists(appId))
-                                    {	
-					    // Check for install/uninstall block.
-					bool installUninstallBlocked = appManagerImplInstance->checkInstallUninstallBlock(appId);
-					if (installUninstallBlocked)
-					{
-						LOGINFO("Blocked state found for appId: %s. Initiating TERMINATE.", appId.c_str());
-						mAdminLock.Unlock();
-					        Core::hresult terminateStatus = appManagerImplInstance->TerminateApp(appId);
-						LOGINFO("TerminateApp returned status: %d", terminateStatus);
-						mAdminLock.Lock();
-					}
-                                    }
-                                    else
-                                    {
-                                        LOGERR("AppId: %s not found after PAUSED wait", appId.c_str());
-                                        appManagerTelemetryReporting.reportTelemetryErrorData(appId, AppManagerImplementation::APP_ACTION_CLOSE, AppManagerImplementation::ERROR_INTERNAL);
-                                        status = Core::ERROR_GENERAL;
-                                    }
-                                }
-                                else
-                                {
-                                    LOGERR("Timed out waiting for appId: %s to reach PAUSED state", appId.c_str());
-                                    appManagerTelemetryReporting.reportTelemetryErrorData(appId, AppManagerImplementation::APP_ACTION_CLOSE, AppManagerImplementation::ERROR_INTERNAL);
-                                    status = Core::ERROR_GENERAL;
-#ifdef APP_MANAGER_RESOURCE_MONITOR
-                                    mAdminLock.Unlock();
-                                    terminateApp(appId);
-                                    mAdminLock.Lock();
-#endif
-                                }
+                                // Return success — close transition is in progress asynchronously
                             }
                             else
                             {

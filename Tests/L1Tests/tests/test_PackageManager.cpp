@@ -2204,7 +2204,7 @@ TEST_F(PackageManagerTest, getRunningApplicationsUsingPackageComRpcSuccess) {
     waitforSignal(TIMEOUT_FOR_INIT);
 
     auto* statusInterface = static_cast<Exchange::IAppPackagesStatus*>(mPackageManagerImpl->QueryInterface(Exchange::IAppPackagesStatus::ID));
-    ASSERT_TRUE(statusInterface != nullptr);
+    ASSERT_TRUE(nullptr != statusInterface);
 
     std::string applicationIds;
     EXPECT_EQ(Core::ERROR_NONE, statusInterface->GetRunningApplicationsUsingPackage("YouTube", applicationIds));

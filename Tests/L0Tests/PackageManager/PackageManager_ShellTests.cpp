@@ -142,7 +142,7 @@ uint32_t Test_PM_Shell_InitializeSuccessAndQueryInterfaces()
     L0Test::ExpectTrue(tr, d != nullptr, "Plugin exposes IPackageDownloader via QueryInterface");
     L0Test::ExpectTrue(tr, i != nullptr, "Plugin exposes IPackageInstaller via QueryInterface");
     L0Test::ExpectTrue(tr, h != nullptr, "Plugin exposes IPackageHandler via QueryInterface");
-    L0Test::ExpectTrue(tr, s != nullptr, "Plugin exposes IAppPackagesStatus via QueryInterface");
+    L0Test::ExpectTrue(tr, nullptr != s, "Plugin exposes IAppPackagesStatus via QueryInterface");
 
     if (d != nullptr) {
         static_cast<WPEFramework::Exchange::IPackageDownloader*>(d)->Release();
@@ -153,7 +153,7 @@ uint32_t Test_PM_Shell_InitializeSuccessAndQueryInterfaces()
     if (h != nullptr) {
         static_cast<WPEFramework::Exchange::IPackageHandler*>(h)->Release();
     }
-    if (s != nullptr) {
+    if (nullptr != s) {
         static_cast<WPEFramework::Exchange::IAppPackagesStatus*>(s)->Release();
     }
 

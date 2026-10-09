@@ -2161,13 +2161,12 @@ TEST_F(PackageManagerTest, getRunningApplicationsUsingPackageJsonRpcSuccess) {
 
     const uint32_t rc = mJsonRpcHandler.Invoke(connection, _T("getRunningApplicationsUsingPackage"), _T("{\"packageId\": \"YouTube\"}"), mJsonRpcResponse);
     EXPECT_EQ(Core::ERROR_NONE, rc);
-    // The result is the string out-param, carrying the JSON payload
-    EXPECT_EQ(mJsonRpcResponse, R"~~("[\"YouTube\"]")~~");
+    EXPECT_EQ(mJsonRpcResponse, R"~~(["YouTube"])~~");
 
     // A package with no running users serializes as an empty JSON array
     const uint32_t rcEmpty = mJsonRpcHandler.Invoke(connection, _T("getRunningApplicationsUsingPackage"), _T("{\"packageId\": \"com.rdkcentral.base\"}"), mJsonRpcResponse);
     EXPECT_EQ(Core::ERROR_NONE, rcEmpty);
-    EXPECT_EQ(mJsonRpcResponse, R"~~("[]")~~");
+    EXPECT_EQ(mJsonRpcResponse, R"~~([])~~");
 
     deinitforJsonRpc();
 }

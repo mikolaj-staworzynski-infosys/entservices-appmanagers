@@ -1361,18 +1361,10 @@ namespace Plugin {
         CHECK_CACHE()
 
         std::lock_guard<std::recursive_mutex> lock(mtxState);
-        std::vector<std::string> appIds;
-        const packagemanager::Result result = packageImpl->GetRunningApplicationsUsingPackage(packageId, appIds);
+        // libpackage already returns the ids serialized as a JSON array string.
+        const packagemanager::Result result = packageImpl->GetRunningApplicationsUsingPackage(packageId, applicationIds);
         if (packagemanager::SUCCESS != result) {
             LOGERR("Failed to get running applications for packageId '%s': %d", packageId.c_str(), static_cast<int>(result));
-            return Core::ERROR_GENERAL;
-        }
-        JsonArray list = JsonArray();
-        for (const auto& appId : appIds) {
-            list.Add(appId);
-        }
-        if (!list.ToString(applicationIds)) {
-            LOGERR("Failed to stringify running application ids to JsonArray");
             return Core::ERROR_GENERAL;
         }
         return Core::ERROR_NONE;

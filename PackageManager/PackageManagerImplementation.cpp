@@ -38,7 +38,7 @@ namespace Plugin {
 
     SERVICE_REGISTRATION(PackageManagerImplementation, 1, 0);
 
-    #define CHECK_CACHE() { if ((packageImpl.get() == nullptr) || (!cacheInitialized)) { \
+    #define CHECK_CACHE() { if ((!cacheInitialized) || (packageImpl.get() == nullptr)) { \
         LOGERR("Cache is not initialized!"); \
         return Core::ERROR_UNAVAILABLE; \
     }}

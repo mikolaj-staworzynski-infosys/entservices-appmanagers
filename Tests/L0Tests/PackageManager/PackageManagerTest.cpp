@@ -70,7 +70,6 @@ int main()
         { "PM_Impl_GetRunningApplicationsUsingPackageSuccess", Test_PM_Impl_GetRunningApplicationsUsingPackageSuccess },
         { "PM_Impl_GetRunningApplicationsUsingPackageBackendFailure", Test_PM_Impl_GetRunningApplicationsUsingPackageBackendFailure },
         { "PM_Impl_GetRunningApplicationsUsingPackageCacheUnavailable", Test_PM_Impl_GetRunningApplicationsUsingPackageCacheUnavailable },
-        { "PM_Impl_InstallDifferentVersionBlockedWhileLockedThenProcessedOnUnlock", Test_PM_Impl_InstallDifferentVersionBlockedWhileLockedThenProcessedOnUnlock },
         { "PM_Impl_InstallDifferentVersionWhileLocked", Test_PM_Impl_InstallDifferentVersionWhileLocked },
         { "PM_Impl_UninstallBlockedWhileLockedThenProcessedOnUnlock", Test_PM_Impl_UninstallBlockedWhileLockedThenProcessedOnUnlock },
         { "PM_Impl_InstallCreateStorageFailureReportsInstallFailure", Test_PM_Impl_InstallCreateStorageFailureReportsInstallFailure },

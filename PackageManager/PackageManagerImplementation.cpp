@@ -479,17 +479,8 @@ namespace Plugin {
                 if (it != mState.end()) {
                     State &installedState = it->second;
                     if ( installedState.mLockCount ) {
-#ifdef ENABLE_INSTALL_WHILE_LOCKED
-                        LOGINFO("App is locked id: '%s' ver: '%s' count:%d, proceeding with install due to ENABLE_INSTALL_WHILE_LOCKED",
+                        LOGINFO("App is locked id: '%s' ver: '%s' count:%d, proceeding with install",
                             packageId.c_str(), installedVersion.c_str(), installedState.mLockCount);
-#else
-                        LOGWARN("App is locked id: '%s' ver: '%s' count:%d", packageId.c_str(), installedVersion.c_str(), installedState.mLockCount);
-                        state.installState = InstallState::INSTALLATION_BLOCKED;
-                        state.blockedInstallData.version = version;
-                        state.blockedInstallData.keyValues = keyValues;
-                        state.blockedInstallData.fileLocator = fileLocator;
-                        NotifyInstallStatus(packageId, version, state);
-#endif
                     }
                 }
             }
@@ -1043,17 +1034,7 @@ namespace Plugin {
             auto &stateBlocked = itBlocked->second;
             LOGDBG("blockedVer: '%s' state: %d", blockedVer.c_str(), (unsigned) stateBlocked.installState);
             stateBlocked.unpackedPath = "";
-            if (stateBlocked.installState == InstallState::INSTALLATION_BLOCKED) {
-                auto blockedData = stateBlocked.blockedInstallData;
-                if (Install(packageId, blockedData.version, blockedData.keyValues, blockedData.fileLocator, stateBlocked) == Core::ERROR_NONE) {
-                    LOGDBG("Blocked package installed. id: %s ver: %s", packageId.c_str(), blockedVer.c_str());
-                    if (version.compare(blockedVer)) {  // different version(s)
-                        setState(packageId, version, InstallState::UNINSTALLED);
-                    }
-                } else {
-                    LOGERR("Blocked package installtion failed id: %s ver: %s", packageId.c_str(), blockedVer.c_str());
-                }
-            } else if (stateBlocked.installState == InstallState::UNINSTALL_BLOCKED) {
+            if (stateBlocked.installState == InstallState::UNINSTALL_BLOCKED) {
                 string errorReason;
                 if (Uninstall(packageId, errorReason) == Core::ERROR_NONE) {
                     LOGDBG("Blocked package uninstalled id: %s ver: %s", packageId.c_str(), blockedVer.c_str());
@@ -1157,12 +1138,6 @@ namespace Plugin {
             mState.insert( { key, state } );
         }
 
-        #if !defined(UNIT_TEST) && !defined(ENABLE_NATIVEBUILD)
-        if (subSystem != nullptr) {
-            subSystem->Set(PluginHost::ISubSystem::INSTALLATION, nullptr);
-        }
-	    #endif
-
         cacheInitialized = true;
          const std::string markerFile = PACKAGE_MANAGER_MARKER_FILE;
             std::ofstream file(markerFile);
@@ -1173,6 +1148,13 @@ namespace Plugin {
             } else {
                LOGERR("Failed to create marker file: %s", markerFile.c_str());
             }
+
+
+        #if !defined(UNIT_TEST) && !defined(ENABLE_NATIVEBUILD)
+            if (subSystem != nullptr) {
+                subSystem->Set(PluginHost::ISubSystem::INSTALLATION, nullptr);
+            }
+	    #endif
 
           const int packageCount = static_cast<int>(mState.size());
           recordAndPublishTelemetryData(TELEMETRY_MARKER_PACKAGE_CACHE_INIT_TIME,
@@ -1446,9 +1428,22 @@ namespace Plugin {
 Core::hresult PackageManagerImplementation::GetConfigListForInstalledPackages(const string &filter, string &config /* @out @opaque */)
 {
     CHECK_CACHE()
-    (void)filter;
+    Core::hresult result = Core::ERROR_GENERAL;
+
     config.clear();
-    return Core::ERROR_NOT_SUPPORTED;
+
+    const packagemanager::Result pmResult = packageImpl->GetConfigListForInstalledPackages(filter, config);
+    if (pmResult == packagemanager::SUCCESS)
+    {
+        result = Core::ERROR_NONE;
+    }
+    else
+    {
+        config.clear();
+        LOGWARN("GetConfigListForInstalledPackages failed for filter '%s' (pmResult=%d)", filter.c_str(), static_cast<int>(pmResult));
+    }
+
+    return result;
 }
 } // namespace Plugin
 } // namespace WPEFramework
